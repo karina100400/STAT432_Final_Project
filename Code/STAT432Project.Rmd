@@ -8,6 +8,7 @@ date: "2025-04-08"
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(car)
+set.seed(7)
 
 
 uiuc_extended <- c(
@@ -196,10 +197,26 @@ vif_plot <- ggplot(vif_df, aes(x = reorder(Variable, VIF), y = VIF)) +
   theme_minimal()  +
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5),
-        axis.text.y = element_text(size = 4))
+        axis.text.y = element_text(size = 2))
 
 vif_plot
 
 #saving plot as png
 ggsave("vif_plot.png", plot = vif_plot, width = 6, height = 2, dpi = 300)
+```
+```{r Splitting training and testing}
+# number of rows in entire dataset
+gliomaNumRows <- dim(glioma_labels)[1]
+gliomaTestNumRows <- defaultNumRows*0.2
+
+# separate dataset into train and test
+test_idx <- sample(x = 1:gliomaTestNumRows, size = gliomaTestNumRows)
+Glioma_train <- glioma_labels[-test_idx,]
+Glioma_test <- glioma_labels[test_idx,]
+```
+
+```{r KNN}
+```
+
+```{r Logistic Regression}
 ```
