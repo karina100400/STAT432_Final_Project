@@ -1,0 +1,205 @@
+---
+title: "STAT 432 Project"
+output: html_document
+date: "2025-04-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(car)
+
+
+uiuc_extended <- c(
+  "caucasian" = "#E84A27",
+  "black or african american" = "#7393B3",
+  "asian" = "#FFBD00",   # optional: Illinois yellow for contrast
+  "american indian or alaska native" = "#5F6A72"  # muted grey-blue
+)
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+
+```{r loading data}
+#preprocessed data
+glioma <- read_csv("TCGA_InfoWithGrade.csv")
+glioma_labels <- read_csv("TCGA_GBM_LGG_Mutations_all.csv")
+
+#replacing white race with caucasian
+glioma_labels <- glioma_labels %>%
+  mutate(Race = ifelse(Race == "white", "caucasian", Race))
+
+head(glioma)
+head(glioma_labels)
+```
+```{r processing}
+#define a function to replace '--' and 'not reported' with NA
+replace_missing <- function(x) {
+  x[x == "--" | tolower(x) == "not reported"] <- NA
+  return(x)
+}
+
+#apply the function to relevant columns
+glioma_labels$Gender <- replace_missing(glioma_labels$Gender)
+glioma_labels$Race <- replace_missing(glioma_labels$Race)
+glioma_labels$Age_at_diagnosis <- replace_missing(glioma_labels$Age_at_diagnosis)
+
+glioma_labels <- glioma_labels %>%
+  mutate(
+    #extract number of years and days (age) of patient
+    years = as.numeric(str_extract(Age_at_diagnosis, "\\d+(?=\\s*years)")),
+    days = as.numeric(str_extract(Age_at_diagnosis, "\\d+(?=\\s*days)")),
+    
+    #replace NA with 0 if one of the parts is missing
+    years = ifelse(is.na(years), 0, years),
+    days = ifelse(is.na(days), 0, days),
+    
+    #convert to decimal years
+    Age_at_diagnosis = years + (days / 365)
+  ) %>% 
+  select(-years, -days)
+```
+
+```{r missing values}
+#checking missing values
+
+#impute Gender with mode
+glioma_labels$Gender[is.na(glioma_labels$Gender)] <- names(sort(table(glioma_labels$Gender), decreasing = TRUE))[1]
+
+#impute Race with mode
+glioma_labels$Race[is.na(glioma_labels$Race)] <- names(sort(table(glioma_labels$Race), decreasing = TRUE))[1]
+
+#convert Age_at_diagnosis to numeric
+glioma_labels$Age_at_diagnosis <- as.numeric(glioma_labels$Age_at_diagnosis)
+
+#impute Age_at_diagnosis with median
+glioma_labels$Age_at_diagnosis[is.na(glioma_labels$Age_at_diagnosis)] <- median(glioma_labels$Age_at_diagnosis, na.rm = TRUE)
+
+# Check for any remaining missing values
+sum(is.na(glioma_labels$Gender))           
+sum(is.na(glioma_labels$Race))             
+sum(is.na(glioma_labels$Age_at_diagnosis)) 
+
+```
+
+```{r}
+#processing to factorization and hotcoding
+
+#hot coding mutation columns
+mutation_cols <- colnames(glioma_labels)[8:27]
+
+glioma_labels <- glioma_labels %>%
+  mutate(across(all_of(mutation_cols),
+                ~ ifelse(. == "MUTATED", 1,
+                         ifelse(. == "NOT_MUTATED", 0, NA))),
+         across(8:27, as.factor))
+
+#turning hotcoded columns into factor cols
+glioma_labels <- glioma_labels %>%
+  select("Age_at_diagnosis", everything()) %>%
+  mutate(across(2:24, as.factor))
+
+head(glioma_labels)
+
+```
+
+```{r age/gender boxplot}
+p <- ggplot(glioma_labels, mapping = aes(y = Age_at_diagnosis, x = Grade, 
+                             fill = Gender)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("Male" = "#E84A27", "Female" = "#7393B3")) +
+  labs(y = "Age at Diagnosis", title = "Diagnosis Type at Age & Gender Boxplot",
+       fill = "Gender")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+p
+
+#saving plot as png
+ggsave("age_gender_diagnostics.png", plot = p, width = 6, height = 4, dpi = 300)
+```
+
+
+
+```{r race}
+race_df <- glioma_labels
+race_df$Race <- factor(glioma_labels$Race, levels = rev(levels(factor(glioma_labels$Race))))
+
+race_plot <-  ggplot(race_df, aes(x = Race, fill = Race)) +
+  geom_bar(position = 'dodge') + 
+  labs(fill = "Race", y = "Count", title = "Proportion of Race within Patient Sample") +
+  theme(axis.text.x = element_text(size = 6)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  coord_flip() + 
+  scale_fill_manual(values = uiuc_extended)
+
+race_plot
+
+#saving plot as png
+ggsave("race_plot.png", plot = race_plot, width = 6, height = 2, dpi = 300)
+```
+
+
+
+```{r}
+uiuc_org <- "#E84A27"
+uiuc_blue <- "#4F6D94"
+# Convert to long format
+df_long <- glioma_labels %>%
+  pivot_longer(cols = c(colnames(glioma_labels)[8:27]), 
+               names_to = "Feature",
+               values_to = "Value")
+
+#grade across each Feature
+grade_gene <- ggplot(df_long, aes(x = Value, fill = Grade)) +
+  geom_bar(position = "stack") +
+  facet_wrap(~ Feature, scales = "free_x") +
+  labs(x = "Mutation Status (0 = Not Mutated, 1 = Mutated)", 
+       y = "Count", 
+       fill = "Grade",
+       title = "Proportion of Classifications within Mutated Genes") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  scale_fill_manual(values = c('LGG' = uiuc_org, 'GBM' = uiuc_blue))
+
+grade_gene
+
+#saving plot as png
+ggsave("grade_gene.png", plot = grade_gene, width = 6, height = 4, dpi = 300)
+```
+
+
+
+```{r multicollinearity}
+model <- glm(Grade ~ ., data = glioma)
+
+# Get VIF values
+vif_values <- vif(model)
+
+# Turn into a data frame for plotting
+vif_df <- data.frame(
+  Variable = names(vif_values),
+  VIF = vif_values
+)
+
+vif_plot <- ggplot(vif_df, aes(x = reorder(Variable, VIF), y = VIF)) +
+  geom_col(fill = uiuc_blue) +
+  geom_hline(yintercept = 5, color = "red", linetype = "dashed") +  
+  coord_flip() +
+  labs(title = "VIF Values for Predictors", x = "Variables", y = "VIF") +
+  theme_minimal()  +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        axis.text.y = element_text(size = 4))
+
+vif_plot
+
+#saving plot as png
+ggsave("vif_plot.png", plot = vif_plot, width = 6, height = 2, dpi = 300)
+```
