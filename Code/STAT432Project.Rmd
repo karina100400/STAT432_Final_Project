@@ -220,3 +220,10 @@ Glioma_test <- glioma_labels[test_idx,]
 
 ```{r Logistic Regression}
 ```
+
+
+### Random Forest Classifier
+```{r Random Forest Classifier}
+
+```
+
