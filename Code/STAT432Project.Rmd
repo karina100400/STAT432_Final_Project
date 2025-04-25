@@ -6,10 +6,15 @@ date: "2025-04-08"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+#loading libraryies
 library(tidyverse)
 library(car)
-set.seed(7)
+library(caret)
+library(class)
 
+#setting seed
+set.seed(7)
 
 uiuc_extended <- c(
   "caucasian" = "#E84A27",
@@ -205,17 +210,101 @@ vif_plot
 ggsave("vif_plot.png", plot = vif_plot, width = 6, height = 2, dpi = 300)
 ```
 ```{r Splitting training and testing}
+#removing ID columns
+glioma_Labels <- glioma_labels %>% 
+  select(-Project, -Case_ID, -Primary_Diagnosis)
+
+#shuffling rows
+glioma_Labels <- glioma_Labels[sample(nrow(glioma_Labels)), ]
+
 # number of rows in entire dataset
-gliomaNumRows <- dim(glioma_labels)[1]
-gliomaTestNumRows <- defaultNumRows*0.2
+gliomaNumRows <- dim(glioma_Labels)[1]
+gliomaTestNumRows <- gliomaNumRows*0.2
 
 # separate dataset into train and test
 test_idx <- sample(x = 1:gliomaTestNumRows, size = gliomaTestNumRows)
-Glioma_train <- glioma_labels[-test_idx,]
-Glioma_test <- glioma_labels[test_idx,]
+Glioma_train <- glioma_Labels[-test_idx,]
+Glioma_test <- glioma_Labels[test_idx,]
+
+#one-hot encoding
+dummies <- dummyVars(Grade ~ ., data = glioma_Labels)
+
+# apply transformation to train and test sets
+X_train <- predict(dummies, newdata = Glioma_train)
+X_test  <- predict(dummies, newdata = Glioma_test)
+
+# extract labels
+Y_train <- Glioma_train$Grade
+Y_test  <- Glioma_test$Grade
+
 ```
 
+##Finding optimal K for KNN
+
 ```{r KNN}
+# parameters for cross-validation
+resamplingMethod <- "cv"
+numFolds <- 20
+classificationMethod <- "knn"
+performanceMetric <- "Accuracy"
+
+# sequence of K values
+K_seq <- data.frame(k = c(1, 5, 10, 20, 50, 100))
+
+# setup the cross-validation options
+knn_cv_train_control <- trainControl(method = resamplingMethod,
+                                     number = numFolds)
+
+# train the model
+knn_cv_train <- train(x = X_train,
+                      y = Y_train,
+                      method = classificationMethod,
+                      metric = performanceMetric,
+                      trControl = knn_cv_train_control,
+                      tuneGrid = K_seq)
+
+print(knn_cv_train)
+```
+### Fitting KNN model with optimal K
+```{r KNN}
+# best K
+opt_K <- 10
+
+knn_train <- knn(train = X_train,
+                 test = X_test,
+                 cl = Y_train,
+                 k = opt_K)
+
+# prediction confusion matrix on the test dataset
+KNNconfusionMat <- table(Predicted = knn_train, Actual = Y_test)
+print(KNNconfusionMat)
+```
+#### Calculating accuracy statistics
+```{r KNN accuracy}
+# calculate test error
+numCorrectPredictions <- sum(diag(KNNconfusionMat))
+numPredictions <- sum(KNNconfusionMat)
+testError <- 1- (numCorrectPredictions/numPredictions)
+print(paste0("The test error is: ", testError))
+
+# calculate the sensitivity of each class
+numClasses <- dim(q2_2_confusionMat)[1]
+for(i in 1:numClasses){
+  # class label
+  class_label_temp <- dimnames(KNNconfusionMat)$Actual[i]
+  
+  # calculate how many of the true occurrences of each class label were correctly classified
+  num_predicted_class_label <- diag(KNNconfusionMat)[i]
+  
+  # calculate true number of occurrences of each class label
+  num_true_class_label <- sum(KNNconfusionMat[,i])
+  
+  # calculate sensitivity
+  sensitivity_temp <- num_predicted_class_label/num_true_class_label
+  
+  # print
+  print(paste0("The sensitivity for class label ", class_label_temp, " is: ", sensitivity_temp))
+}
 ```
 
 ```{r Logistic Regression}
