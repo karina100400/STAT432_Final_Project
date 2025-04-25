@@ -214,15 +214,12 @@ ggsave("vif_plot.png", plot = vif_plot, width = 6, height = 2, dpi = 300)
 glioma_Labels <- glioma_labels %>% 
   select(-Project, -Case_ID, -Primary_Diagnosis)
 
-#shuffling rows
-glioma_Labels <- glioma_Labels[sample(nrow(glioma_Labels)), ]
-
 # number of rows in entire dataset
 gliomaNumRows <- dim(glioma_Labels)[1]
 gliomaTestNumRows <- gliomaNumRows*0.2
 
 # separate dataset into train and test
-test_idx <- sample(x = 1:gliomaTestNumRows, size = gliomaTestNumRows)
+test_idx <- sample(x = 1:gliomaNumRows, size = gliomaTestNumRows)
 Glioma_train <- glioma_Labels[-test_idx,]
 Glioma_test <- glioma_Labels[test_idx,]
 
