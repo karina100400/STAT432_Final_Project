@@ -210,6 +210,9 @@ vif_plot
 ggsave("vif_plot.png", plot = vif_plot, width = 6, height = 2, dpi = 300)
 ```
 ```{r Splitting training and testing}
+# set seed
+set.seed(7)
+
 #removing ID columns
 glioma_Labels <- glioma_labels %>% 
   select(-Project, -Case_ID, -Primary_Diagnosis)
@@ -310,6 +313,19 @@ for(i in 1:numClasses){
 
 ### Random Forest Classifier
 ```{r Random Forest Classifier}
+library(randomForestSRC)
+set.seed(7)
+Glioma_RFC_auc <- rfsrc(Grade ~., data = as.data.frame(Glioma_train), ntree = 300, splitrule = "auc", importance = TRUE) 
+#default value for mtry
+#default value for nsplit = 0 because our dataset is not too large
+Glioma_RFC_auc_predicted <- predict(Glioma_RFC_auc, newdata=Glioma_test)
+Glioma_RFC_auc_predicted
 
 ```
+```{r}
+Glioma_RFC_gini <- rfsrc(Grade ~., data = as.data.frame(Glioma_train), ntree = 300, splitrule = "entropy", importance = TRUE) 
 
+Glioma_RFC_gini_predicted <- predict(Glioma_RFC_gini, newdata=Glioma_test)
+Glioma_RFC_gini_predicted
+```
+Using splitrule "auc", we achieve a lower error.
