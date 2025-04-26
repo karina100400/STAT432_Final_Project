@@ -333,7 +333,7 @@ Using splitrule "auc", we achieve a lower test error.
 
 ### Gradient Boosting Model
 ```{r}
-
+#gbm requires output class to be {0,1}
 Glioma_train_boosting <- Glioma_train %>% 
   mutate(Grade = ifelse(Grade=="GBM",1,0))
 ```
@@ -345,7 +345,7 @@ set.seed(7)
 #Trying different learning rates (0.1, 0.01, 0.001) and using cv to choose optimal ntrees
 
 # Learning Rate 0.1
-Glioma_GBM1 <- gbm(Grade ~., data=Glioma_train_boosting, distribution="bernoulli", n.trees=1000, interaction.depth = 2, shrinkage=0.1, cv.folds = 5)
+Glioma_GBM1 <- gbm(Grade ~., data=Glioma_train_boosting, distribution="bernoulli", n.trees=1000, interaction.depth = 3, shrinkage=0.1, cv.folds = 5)
 #finding optimal number of trees
 best_iter1 <- gbm.perf(Glioma_GBM1, method = "cv")
 #getting class labels
@@ -363,7 +363,7 @@ Glioma_GBM1_test_error
 ```{r}
 set.seed(7)
 # Learning Rate 0.01
-Glioma_GBM2 <- gbm(Grade ~., data=Glioma_train_boosting, distribution="bernoulli", n.trees=3000, interaction.depth = 2, shrinkage=0.01, cv.folds = 5)
+Glioma_GBM2 <- gbm(Grade ~., data=Glioma_train_boosting, distribution="bernoulli", n.trees=3000, interaction.depth = 3, shrinkage=0.01, cv.folds = 5)
 best_iter2 <- gbm.perf(Glioma_GBM2, method = "cv")
 
 pred <- predict(Glioma_GBM2, newdata = Glioma_test, n.trees = best_iter2, type="response")
@@ -376,23 +376,85 @@ Glioma_GBM2_conf_matrix
 Glioma_GBM2_test_error <- 1-(sum(diag(Glioma_GBM2_conf_matrix))/sum(Glioma_GBM2_conf_matrix))
 Glioma_GBM2_test_error
 ```
+Glioma_GBM2 was our best gbm model 
+
+### Adaboost
+
 ```{r}
 set.seed(7)
-# Learning Rate 0.001
-Glioma_GBM3 <- gbm(Grade ~., data=Glioma_train_boosting, distribution="bernoulli", n.trees=12000, shrinkage=0.001, cv.folds = 5)
-best_iter3 <- gbm.perf(Glioma_GBM3, method = "cv")
+# Learning Rate 0.01
+Glioma_Ada <- gbm(Grade ~., data=Glioma_train_boosting, distribution="adaboost", n.trees=3000, interaction.depth = 3, shrinkage=0.01 ,cv.folds = 5)
+best_iter_ada <- gbm.perf(Glioma_Ada, method = "cv")
 
-pred <- predict(Glioma_GBM3, newdata = Glioma_test, n.trees = best_iter3, type="response")
-Glioma_GBM3_predicted <- ifelse(pred > 0.5, 1, 0)
-Glioma_GBM3_predicted <- ifelse(Glioma_GBM3_predicted == 1, "GBM", "LGG")
+pred <- predict(Glioma_Ada, newdata = Glioma_test, n.trees = best_iter2, type="response")
+Glioma_Ada_predicted <- ifelse(pred > 0.5, 1, 0)
+Glioma_Ada_predicted <- ifelse(Glioma_Ada_predicted == 1, "GBM", "LGG")
 
-Glioma_GBM3_conf_matrix <- table(Predicted = Glioma_GBM3_predicted, Actual = Glioma_test$Grade)
-Glioma_GBM3_conf_matrix
+Glioma_Ada_conf_matrix <- table(Predicted = Glioma_Ada_predicted, Actual = Glioma_test$Grade)
+Glioma_Ada_conf_matrix
 
-Glioma_GBM3_test_error <- 1-(sum(diag(Glioma_GBM3_conf_matrix))/sum(Glioma_GBM3_conf_matrix))
-Glioma_GBM3_test_error
+Glioma_Ada_test_error <- 1-(sum(diag(Glioma_Ada_conf_matrix))/sum(Glioma_Ada_conf_matrix))
+Glioma_Ada_test_error
 ```
-There was a negligible difference in the three different GBM models.
+Adaboost performed very similarly to GBM.
+
+### SVM
 ```{r}
-#use caret tune grid
+set.seed(7)
+library(e1071)
+tune_linear=tune(svm, Grade~., data=Glioma_train, kernel ="linear",
+ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100))
+)
+summary(tune_linear)
 ```
+```{r}
+#Fitting SVM Model linear
+Glioma_SVM_linear <- tune_linear$best.model
+
+
+Glioma_SVM_linear_pred <- predict(Glioma_SVM_linear, Glioma_test) #returns labels directly
+
+Glioma_SVM_linear_conf_matrix <- table(Predicted = Glioma_SVM_linear_pred, Actual = Glioma_test$Grade)
+Glioma_SVM_linear_conf_matrix
+
+Glioma_SVM_linear_test_error <- 1-(sum(diag(Glioma_SVM_linear_conf_matrix))/sum(Glioma_SVM_linear_conf_matrix))
+Glioma_SVM_linear_test_error
+```
+```{r}
+tune_radial=tune(svm, Grade~., data=Glioma_train, kernel ="radial",
+ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100))
+)
+summary(tune_radial)
+```
+```{r}
+Glioma_SVM_radial <- tune_radial$best.model
+
+
+Glioma_SVM_radial_pred <- predict(Glioma_SVM_radial, Glioma_test) #returns labels directly
+
+Glioma_SVM_radial_conf_matrix <- table(Predicted = Glioma_SVM_radial_pred, Actual = Glioma_test$Grade)
+Glioma_SVM_radial_conf_matrix
+
+Glioma_SVM_radial_test_error <- 1-(sum(diag(Glioma_SVM_radial_conf_matrix))/sum(Glioma_SVM_radial_conf_matrix))
+Glioma_SVM_radial_test_error
+```
+```{r}
+tune_poly=tune(svm, Grade~., data=Glioma_train, kernel ="polynomial", degree=2,
+ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100))
+)
+summary(tune.out)
+```
+```{r}
+Glioma_SVM_poly <- tune_poly$best.model
+
+
+Glioma_SVM_poly_pred <- predict(Glioma_SVM_poly, Glioma_test) #returns labels directly
+
+Glioma_SVM_poly_conf_matrix <- table(Predicted = Glioma_SVM_poly_pred, Actual = Glioma_test$Grade)
+Glioma_SVM_poly_conf_matrix
+
+Glioma_SVM_poly_test_error <- 1-(sum(diag(Glioma_SVM_poly_conf_matrix))/sum(Glioma_SVM_poly_conf_matrix))
+Glioma_SVM_poly_test_error
+```
+All three SVM models performed similarly.
+
