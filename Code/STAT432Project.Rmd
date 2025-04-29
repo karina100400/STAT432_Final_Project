@@ -309,7 +309,7 @@ testError <- 1- (numCorrectPredictions/numPredictions)
 print(paste0("The test error is: ", testError))
 
 # calculate the sensitivity of each class
-numClasses <- dim(q2_2_confusionMat)[1]
+numClasses <- dim(KNNconfusionMat)[1]
 for(i in 1:numClasses){
   # class label
   class_label_temp <- dimnames(KNNconfusionMat)$Actual[i]
@@ -420,7 +420,7 @@ Glioma_GBM1_test_error <- 1-(sum(diag(Glioma_GBM1_conf_matrix))/sum(Glioma_GBM1_
 Glioma_GBM1_test_error
 
  
-auc_value <- auc(roc(Glioma_test$Grade, Glioma_GBM2_pred))
+auc_value <- auc(roc(Glioma_test$Grade, Glioma_GBM1_pred))
 print(auc_value)
 ```
 ```{r}
