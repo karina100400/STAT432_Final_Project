@@ -442,6 +442,7 @@ print(auc_value)
 
 
 ```{r}
+set.seed(7)
 tune_radial=tune(svm, Grade~., data=Glioma_train, kernel ="radial",
 ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100)), probability = TRUE
 )
@@ -461,8 +462,9 @@ print(auc_value)
 ```
 
 ```{r}
-tune_poly=tune(svm, Grade~., data=Glioma_train, kernel ="polynomial", degree=2,
-ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100)), probability = TRUE
+set.seed(7)
+tune_poly=tune(svm, Grade~., data=Glioma_train, kernel ="polynomial",
+ranges=list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100), degree=c(2,3)), probability = TRUE
 )
 Glioma_SVM_poly <- tune_poly$best.model
 
