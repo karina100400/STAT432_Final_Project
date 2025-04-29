@@ -247,14 +247,16 @@ Y_test  <- Glioma_test$Grade
 resamplingMethod <- "cv"
 numFolds <- 20
 classificationMethod <- "knn"
-performanceMetric <- "Accuracy"
+performanceMetric <- "ROC"
 
 # sequence of K values
 K_seq <- data.frame(k = c(1, 5, 10, 20, 50, 100))
 
 # setup the cross-validation options
 knn_cv_train_control <- trainControl(method = resamplingMethod,
-                                     number = numFolds)
+                                     number = numFolds,
+                                     classProbs = TRUE,
+                                     summaryFunction = twoClassSummary)
 
 # train the model
 knn_cv_train <- train(x = X_train,
@@ -309,7 +311,7 @@ testError <- 1- (numCorrectPredictions/numPredictions)
 print(paste0("The test error is: ", testError))
 
 # calculate the sensitivity of each class
-numClasses <- dim(q2_2_confusionMat)[1]
+numClasses <- dim(KNNconfusionMat)[1]
 for(i in 1:numClasses){
   # class label
   class_label_temp <- dimnames(KNNconfusionMat)$Actual[i]
