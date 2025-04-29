@@ -12,6 +12,7 @@ library(tidyverse)
 library(car)
 library(caret)
 library(class)
+library(pROC)
 
 #setting seed
 set.seed(7)
@@ -273,7 +274,27 @@ opt_K <- 10
 knn_train <- knn(train = X_train,
                  test = X_test,
                  cl = Y_train,
-                 k = opt_K)
+                 k = opt_K, 
+                 prob = TRUE)
+
+### Extract probabilities (needed for AUC)
+# Note: The 'prob' attribute gives the proportion of votes for the winning class
+# For binary classification, we need probabilities for the positive class
+knn_probs <- ifelse(
+  knn_train == levels(Y_train)[2],  # Assuming 2nd level is the positive class
+  attr(knn_train, "prob"),          # Probability of winning class
+  1 - attr(knn_train, "prob")       # If predicted as negative, take 1 - prob
+)
+
+### Calculate AUC
+roc_obj <- roc(response = Y_test, predictor = knn_probs)
+auc_value <- auc(roc_obj)
+
+### Print AUC
+print(paste("AUC:", auc_value))
+
+### Plot ROC curve (optional)
+plot(roc_obj, main = paste("ROC Curve (AUC =", round(auc_value, 3), ")"))
 
 # prediction confusion matrix on the test dataset
 KNNconfusionMat <- table(Predicted = knn_train, Actual = Y_test)
@@ -307,7 +328,44 @@ for(i in 1:numClasses){
 }
 ```
 
+###Logistic Regression
+
 ```{r Logistic Regression}
+
+# Fit logistic regression (all predictors)
+logistic_model <- glm(
+  Grade ~ .,               
+  data = Glioma_train,
+  family = binomial(link = "logit")
+)
+
+# Model summary (check p-values)
+summary(logistic_model)
+
+#predict
+pred_probs <- predict(logistic_model, newdata = Glioma_test, type = "response")
+
+# Convert to class predictions (cutoff = 0.5)
+pred_classes <- ifelse(pred_probs > 0.5, 1, 0)
+
+# Confusion matrix
+confusion_mat <- table(Predicted = pred_classes, Actual = Y_test)
+print(confusion_mat)
+
+# Metrics
+accuracy <- sum(diag(confusion_mat)) / sum(confusion_mat)
+sensitivity <- confusion_mat[2, 2] / sum(confusion_mat[, 2])  # TP / (TP + FN)
+specificity <- confusion_mat[1, 1] / sum(confusion_mat[, 1])  # TN / (TN + FP)
+
+cat("Accuracy:", round(accuracy, 3),
+    "\nSensitivity:", round(sensitivity, 3),
+    "\nSpecificity:", round(specificity, 3))
+
+roc_obj <- roc(response = Y_test, predictor = pred_probs)
+plot(roc_obj, main = "ROC Curve for Glioma Grade Prediction")
+auc_value <- auc(roc_obj)
+cat("AUC:", round(auc_value, 3))  # AUC > 0.7 indicates good discrimination
+
 ```
 
 
