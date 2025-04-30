@@ -290,44 +290,45 @@ knn_probs <- ifelse(
 
 ### Calculate AUC
 roc_obj <- roc(response = Y_test, predictor = knn_probs)
-auc_value <- auc(roc_obj)
+auc_KNN <- auc(roc_obj)
 
 ### Print AUC
-print(paste("AUC:", auc_value))
+print(paste("AUC:", auc_KNN))
 
 ### Plot ROC curve (optional)
-plot(roc_obj, main = paste("ROC Curve (AUC =", round(auc_value, 3), ")"))
-
-# prediction confusion matrix on the test dataset
-KNNconfusionMat <- table(Predicted = knn_train, Actual = Y_test)
-print(KNNconfusionMat)
+plot(roc_obj, main = paste("ROC Curve (AUC =", round(auc_KNN, 3), ")"))
 ```
 #### Calculating accuracy statistics
 ```{r KNN accuracy}
+# prediction confusion matrix on the test dataset
+KNNconfusionMat <- table(Predicted = knn_train, Actual = Y_test)
+print(KNNconfusionMat)
+
 # calculate test error
 numCorrectPredictions <- sum(diag(KNNconfusionMat))
 numPredictions <- sum(KNNconfusionMat)
-testError <- 1- (numCorrectPredictions/numPredictions)
-print(paste0("The test error is: ", testError))
+acc_KNN <- 1- (numCorrectPredictions/numPredictions)
+print(paste0("The test error is: ", acc_KNN))
 
-# calculate the sensitivity of each class
-numClasses <- dim(KNNconfusionMat)[1]
-for(i in 1:numClasses){
-  # class label
-  class_label_temp <- dimnames(KNNconfusionMat)$Actual[i]
-  
-  # calculate how many of the true occurrences of each class label were correctly classified
-  num_predicted_class_label <- diag(KNNconfusionMat)[i]
-  
-  # calculate true number of occurrences of each class label
-  num_true_class_label <- sum(KNNconfusionMat[,i])
-  
-  # calculate sensitivity
-  sensitivity_temp <- num_predicted_class_label/num_true_class_label
-  
-  # print
-  print(paste0("The sensitivity for class label ", class_label_temp, " is: ", sensitivity_temp))
-}
+#metrics
+TP <- confusion_mat[1, 1]  # True Positives (Class 1 correctly predicted)
+FN <- confusion_mat[1, 2]  # False Negatives (Class 1 predicted as Class 2)
+FP <- confusion_mat[2, 1]  # False Positives (Class 2 predicted as Class 1)
+TN <- confusion_mat[2, 2]  # True Negatives (Class 2 correctly predicted)
+
+
+acc_KNN <- sum(diag(confusion_mat)) / sum(confusion_mat)
+sens_KNN <- TP / (TP + FN) #TP / (TP + FN)
+spec_KNN <- TN / (TN + FP) # TN / (TN + FP)
+prec_KNN <- TP / (TP + FP) #TP / (TP + FP)
+f1_score_KNN <- 2 * (precision * sensitivity) / (precision + sensitivity)
+
+# Print results
+print(paste("Accuracy:", round(acc_KNN, 4)))
+print(paste("Sensitivity:", round(sens_KNN, 4)))
+print(paste("Specificity:", round(spec_KNN, 4)))
+print(paste("Precision:", round(prec_KNN, 4)))
+print(paste("F1-Score:", round(f1_score_KNN, 4)))
 ```
 
 ###Logistic Regression
@@ -354,19 +355,30 @@ pred_classes <- ifelse(pred_probs > 0.5, 1, 0)
 confusion_mat <- table(Predicted = pred_classes, Actual = Y_test)
 print(confusion_mat)
 
-# Metrics
-accuracy <- sum(diag(confusion_mat)) / sum(confusion_mat)
-sensitivity <- confusion_mat[2, 2] / sum(confusion_mat[, 2])  # TP / (TP + FN)
-specificity <- confusion_mat[1, 1] / sum(confusion_mat[, 1])  # TN / (TN + FP)
+#metrics
+TP <- confusion_mat[1, 1]  # True Positives (Class 1 correctly predicted)
+FN <- confusion_mat[1, 2]  # False Negatives (Class 1 predicted as Class 2)
+FP <- confusion_mat[2, 1]  # False Positives (Class 2 predicted as Class 1)
+TN <- confusion_mat[2, 2]  # True Negatives (Class 2 correctly predicted)
 
-cat("Accuracy:", round(accuracy, 3),
-    "\nSensitivity:", round(sensitivity, 3),
-    "\nSpecificity:", round(specificity, 3))
+
+acc_LR <- sum(diag(confusion_mat)) / sum(confusion_mat)
+sens_LR <- TP / (TP + FN) #TP / (TP + FN)
+spec_LR <- TN / (TN + FP) # TN / (TN + FP)
+prec_LR <- TP / (TP + FP) #TP / (TP + FP)
+f1_score_LR <- 2 * (precision * sensitivity) / (precision + sensitivity)
+
+# Print results
+print(paste("Accuracy:", round(acc_LR, 4)))
+print(paste("Sensitivity (Recall) for Class 1 (Positive):", round(sens_LR, 4)))
+print(paste("Specificity for Class 2 (Negative):", round(spec_LR, 4)))
+print(paste("Precision for Class 1 (Positive):", round(prec_LR, 4)))
+print(paste("F1-Score:", round(f1_score_LR, 4)))
 
 roc_obj <- roc(response = Y_test, predictor = pred_probs)
 plot(roc_obj, main = "ROC Curve for Glioma Grade Prediction")
-auc_value <- auc(roc_obj)
-cat("AUC:", round(auc_value, 3))  # AUC > 0.7 indicates good discrimination
+auc_LR <- auc(roc_obj)
+cat("AUC:", round(auc_LR, 3))  # AUC > 0.7 indicates good discrimination
 
 ```
 
@@ -547,4 +559,32 @@ auc_value <- auc(roc(Glioma_test$Grade, Glioma_SVM_poly_probs[,"GBM"]))
 print(auc_value)
 ```
 All three SVM models performed similarly in terms of test error. The radial SVM model has the highest AUC among all our models.
+
+#results table
+```{r}
+results_table <- data.frame(
+  Model = c("KNN", "Logistic Regression", "Random Forest", 
+            "Gradient Boosting", "AdaBoost", "SVM"),
+  AUC = c(auc_KNN, auc_LR, auc_RF, auc_GB, auc_AB, auc_SVM),
+  Accuracy = c(acc_KNN, acc_LR, acc_RF, acc_GB, acc_AB, acc_SVM),
+  Sensitivity = c(sens_KNN, sens_LR, sens_RF, sens_GB, sens_AB, sens_SVM),
+  Specificity = c(spec_KNN, spec_LR, spec_RF, spec_GB, spec_AB, spec_SVM),
+  Precision = c(prec_KNN, prec_LR, prec_RF, prec_GB, prec_AB, prec_SVM),
+  F1_Score = c(
+    2 * (prec_KNN * sens_KNN) / (prec_KNN + sens_KNN),
+    2 * (prec_LR * sens_LR) / (prec_LR + sens_LR),
+    2 * (prec_RF * sens_RF) / (prec_RF + sens_RF),
+    2 * (prec_GB * sens_GB) / (prec_GB + sens_GB),
+    2 * (prec_AB * sens_AB) / (prec_AB + sens_AB),
+    2 * (prec_SVM * sens_SVM) / (prec_SVM + sens_SVM)
+  )
+)
+
+# Round all numeric columns to 4 decimal places
+results_table[, -1] <- round(results_table[, -1], 4)
+
+# Print the formatted table
+print(results_table)
+
+```
 
