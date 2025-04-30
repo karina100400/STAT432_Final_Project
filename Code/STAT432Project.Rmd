@@ -404,8 +404,12 @@ Glioma_rfc_predicted <- predict(Glioma_rfc, newdata=Glioma_test)
 Glioma_rfc_1_conf_matrix <- confusionMatrix(Glioma_rfc_predicted,Glioma_test$Grade)
 Glioma_rfc_1_conf_matrix
 
-auc_value <- auc(roc(Glioma_test$Grade, Glioma_rfc_pred[,"GBM"]))
-print(auc_value)
+auc_RF <- auc(roc(Glioma_test$Grade, Glioma_rfc_pred[,"GBM"]))
+print(auc_RF)
+acc_RF <- 0.8488
+spec_RF <- 0.8113
+sens_RF <- 0.9091
+prec_RF <- 0.75
 ```
 
 
@@ -440,9 +444,10 @@ Glioma_GBM1_test_error <- 1-(sum(diag(Glioma_GBM1_conf_matrix))/sum(Glioma_GBM1_
 Glioma_GBM1_test_error
 
  
-auc_value <- auc(roc(Glioma_test$Grade, Glioma_GBM1_pred))
-print(auc_value)
+# auc_value <- auc(roc(Glioma_test$Grade, Glioma_GBM1_pred))
+# print(auc_value)
 ```
+
 ```{r}
 set.seed(7)
 # Learning Rate 0.01
@@ -459,8 +464,17 @@ Glioma_GBM2_conf_matrix
 Glioma_GBM2_test_error <- 1-(sum(diag(Glioma_GBM2_conf_matrix))/sum(Glioma_GBM2_conf_matrix))
 Glioma_GBM2_test_error
 
-auc_value <- auc(roc(Glioma_test$Grade, Glioma_GBM2_pred))
-print(auc_value)
+auc_GB <- auc(roc(Glioma_test$Grade, Glioma_GBM2_pred))
+print(auc_GB)
+
+acc_GB <- (sum(diag(Glioma_GBM2_conf_matrix))/sum(Glioma_GBM2_conf_matrix))
+acc_GB
+spec_GB <- Glioma_GBM2_conf_matrix[1,1] / (Glioma_GBM2_conf_matrix[1,1] + Glioma_GBM2_conf_matrix[2,1])
+spec_GB
+sens_GB <- Glioma_GBM2_conf_matrix[2,2] / (Glioma_GBM2_conf_matrix[2,2] + Glioma_GBM2_conf_matrix[1,2])
+sens_GB
+prec_GB <- Glioma_GBM2_conf_matrix[1,1] / (Glioma_GBM2_conf_matrix[1,1] + Glioma_GBM2_conf_matrix[1,2])
+prec_GB
 ```
 
 Glioma_GBM2 was our best gbm model 
@@ -483,8 +497,17 @@ Glioma_Ada_conf_matrix
 Glioma_Ada_test_error <- 1-(sum(diag(Glioma_Ada_conf_matrix))/sum(Glioma_Ada_conf_matrix))
 Glioma_Ada_test_error
 
-auc_value <- auc(roc(Glioma_test$Grade, Glioma_Ada_pred))
-print(auc_value)
+auc_AB <- auc(roc(Glioma_test$Grade, Glioma_Ada_pred))
+print(auc_AB)
+
+acc_AB <- (sum(diag(Glioma_Ada_conf_matrix))/sum(Glioma_Ada_conf_matrix))
+acc_AB
+spec_AB <- Glioma_Ada_conf_matrix[1,1] / (Glioma_Ada_conf_matrix[1,1] + Glioma_Ada_conf_matrix[2,1])
+spec_AB
+sens_AB <- Glioma_Ada_conf_matrix[2,2] / (Glioma_Ada_conf_matrix[2,2] + Glioma_Ada_conf_matrix[1,2])
+sens_AB
+prec_AB <- Glioma_Ada_conf_matrix[1,1] / (Glioma_Ada_conf_matrix[1,1] + Glioma_Ada_conf_matrix[1,2])
+prec_AB
 ```
 Adaboost performed very similarly to GBM. Slightly higher test error but also higher AUC.
 
@@ -535,8 +558,19 @@ Glioma_SVM_radial_conf_matrix
 Glioma_SVM_radial_test_error <- 1-(sum(diag(Glioma_SVM_radial_conf_matrix))/sum(Glioma_SVM_radial_conf_matrix))
 Glioma_SVM_radial_test_error
 
-auc_value <- auc(roc(Glioma_test$Grade, Glioma_SVM_radial_probs[,"GBM"]))
-print(auc_value)
+auc_SVM <- auc(roc(Glioma_test$Grade, Glioma_SVM_radial_probs[,"GBM"]))
+print(auc_SVM)
+
+
+
+acc_SVM <- (sum(diag(Glioma_SVM_radial_conf_matrix))/sum(Glioma_SVM_radial_conf_matrix))
+acc_SVM
+spec_SVM <- Glioma_SVM_radial_conf_matrix[1,1] / (Glioma_SVM_radial_conf_matrix[1,1] + Glioma_SVM_radial_conf_matrix[2,1])
+spec_SVM
+sens_SVM <- Glioma_SVM_radial_conf_matrix[2,2] / (Glioma_SVM_radial_conf_matrix[2,2] + Glioma_SVM_radial_conf_matrix[1,2])
+sens_SVM
+prec_SVM <- Glioma_SVM_radial_conf_matrix[1,1] / (Glioma_SVM_radial_conf_matrix[1,1] + Glioma_SVM_radial_conf_matrix[1,2])
+prec_SVM
 ```
 
 ```{r}
