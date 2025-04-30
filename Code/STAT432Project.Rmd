@@ -372,28 +372,34 @@ cat("AUC:", round(auc_value, 3))  # AUC > 0.7 indicates good discrimination
 
 
 ### Random Forest Classifier
-```{r Random Forest Classifier}
-library(randomForestSRC)
-set.seed(7)
-Glioma_RFC_auc <- rfsrc(Grade ~., data = as.data.frame(Glioma_train), ntree = 300, splitrule = "auc", importance = TRUE) 
-#default value for mtry
-#default value for nsplit = 0 because our dataset is not too large
-Glioma_RFC_auc_predicted <- predict(Glioma_RFC_auc, newdata=Glioma_test)
-Glioma_RFC_auc_predicted
 
-```
+
 ```{r}
+library(randomForest)
 set.seed(7)
-Glioma_RFC_gini <- rfsrc(Grade ~., data = as.data.frame(Glioma_train), ntree = 300, splitrule = "entropy", importance = TRUE) 
+rf_control <- trainControl(method="cv", number = 10, search = "grid", classProbs = TRUE, summaryFunction = twoClassSummary)
 
-Glioma_RFC_gini_predicted <- predict(Glioma_RFC_gini, newdata=Glioma_test)
-Glioma_RFC_gini_predicted
+tunegrid <- expand.grid(.mtry=c(1:6))
+Glioma_rfc <- train(Grade~., data=Glioma_train, method="rf", metric="ROC", tuneGrid=tunegrid, trControl=rf_control)
 ```
-Using splitrule "auc", we achieve a lower test error.
+
+```{r}
+Glioma_rfc_pred <- predict(Glioma_rfc, newdata=Glioma_test, type="prob")
+Glioma_rfc_predicted <- predict(Glioma_rfc, newdata=Glioma_test)
+
+
+
+Glioma_rfc_1_conf_matrix <- confusionMatrix(Glioma_rfc_predicted,Glioma_test$Grade)
+Glioma_rfc_1_conf_matrix
+
+auc_value <- auc(roc(Glioma_test$Grade, Glioma_rfc_pred[,"GBM"]))
+print(auc_value)
+```
+
 
 ### Gradient Boosting Model
 ```{r}
-library(pROC)
+
 #gbm requires output class to be {0,1}
 Glioma_train_boosting <- Glioma_train %>% 
   mutate(Grade = ifelse(Grade=="GBM",1,0))
