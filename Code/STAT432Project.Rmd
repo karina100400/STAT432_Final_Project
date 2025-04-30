@@ -304,20 +304,13 @@ plot(roc_obj, main = paste("ROC Curve (AUC =", round(auc_KNN, 3), ")"))
 KNNconfusionMat <- table(Predicted = knn_train, Actual = Y_test)
 print(KNNconfusionMat)
 
-# calculate test error
-numCorrectPredictions <- sum(diag(KNNconfusionMat))
-numPredictions <- sum(KNNconfusionMat)
-acc_KNN <- 1- (numCorrectPredictions/numPredictions)
-print(paste0("The test error is: ", acc_KNN))
-
 #metrics
-TP <- confusion_mat[1, 1]  # True Positives (Class 1 correctly predicted)
-FN <- confusion_mat[1, 2]  # False Negatives (Class 1 predicted as Class 2)
-FP <- confusion_mat[2, 1]  # False Positives (Class 2 predicted as Class 1)
-TN <- confusion_mat[2, 2]  # True Negatives (Class 2 correctly predicted)
+TP <- KNNconfusionMat[1, 1]  # True Positives (Class 1 correctly predicted)
+FN <- KNNconfusionMat[1, 2]  # False Negatives (Class 1 predicted as Class 2)
+FP <- KNNconfusionMat[2, 1]  # False Positives (Class 2 predicted as Class 1)
+TN <- KNNconfusionMat[2, 2]  # True Negatives (Class 2 correctly predicted)
 
-
-acc_KNN <- sum(diag(confusion_mat)) / sum(confusion_mat)
+acc_KNN <- sum(diag(KNNconfusionMat)) / sum(KNNconfusionMat)
 sens_KNN <- TP / (TP + FN) #TP / (TP + FN)
 spec_KNN <- TN / (TN + FP) # TN / (TN + FP)
 prec_KNN <- TP / (TP + FP) #TP / (TP + FP)
