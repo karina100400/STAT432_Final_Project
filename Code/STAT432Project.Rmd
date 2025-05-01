@@ -403,6 +403,12 @@ acc_RF <- 0.8488
 spec_RF <- 0.8113
 sens_RF <- 0.9091
 prec_RF <- 0.75
+
+importance_RF <- varImp(Glioma_rfc)
+print(importance_RF)
+
+# Optional: Visualize the importance
+plot(importance_RF)
 ```
 
 
@@ -468,6 +474,15 @@ sens_GB <- Glioma_GBM2_conf_matrix[2,2] / (Glioma_GBM2_conf_matrix[2,2] + Glioma
 sens_GB
 prec_GB <- Glioma_GBM2_conf_matrix[1,1] / (Glioma_GBM2_conf_matrix[1,1] + Glioma_GBM2_conf_matrix[1,2])
 prec_GB
+
+importance_GB <- summary(
+  Glioma_GBM2, 
+  n.trees = best_iter2,  # Use the optimal number of trees from cross-validation
+  plotit = TRUE         # Set to TRUE to auto-plot the importance
+)
+
+# Print sorted importance
+print(importance_GB)
 ```
 
 Glioma_GBM2 was our best gbm model 
@@ -501,6 +516,15 @@ sens_AB <- Glioma_Ada_conf_matrix[2,2] / (Glioma_Ada_conf_matrix[2,2] + Glioma_A
 sens_AB
 prec_AB <- Glioma_Ada_conf_matrix[1,1] / (Glioma_Ada_conf_matrix[1,1] + Glioma_Ada_conf_matrix[1,2])
 prec_AB
+
+importance_AB <- summary(
+  Glioma_Ada, 
+  n.trees = best_iter_ada,  # Use the optimal number of trees from cross-validation
+  plotit = FALSE       # Set to TRUE to auto-plot the importance
+)
+
+# Print sorted importance
+print(importance_AB)
 ```
 Adaboost performed very similarly to GBM. Slightly higher test error but also higher AUC.
 
