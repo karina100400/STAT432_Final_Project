@@ -314,7 +314,7 @@ acc_KNN <- sum(diag(KNNconfusionMat)) / sum(KNNconfusionMat)
 sens_KNN <- TP / (TP + FN) #TP / (TP + FN)
 spec_KNN <- TN / (TN + FP) # TN / (TN + FP)
 prec_KNN <- TP / (TP + FP) #TP / (TP + FP)
-f1_score_KNN <- 2 * (precision * sensitivity) / (precision + sensitivity)
+f1_score_KNN <- 2 * (prec_KNN * sens_KNN) / (prec_KNN + sens_KNN)
 
 # Print results
 print(paste("Accuracy:", round(acc_KNN, 4)))
@@ -359,7 +359,7 @@ acc_LR <- sum(diag(confusion_mat)) / sum(confusion_mat)
 sens_LR <- TP / (TP + FN) #TP / (TP + FN)
 spec_LR <- TN / (TN + FP) # TN / (TN + FP)
 prec_LR <- TP / (TP + FP) #TP / (TP + FP)
-f1_score_LR <- 2 * (precision * sensitivity) / (precision + sensitivity)
+f1_score_LR <- 2 * (prec_LR * sens_LR) / (prec_LR + sens_LR)
 
 # Print results
 print(paste("Accuracy:", round(acc_LR, 4)))
@@ -409,6 +409,12 @@ print(importance_RF)
 
 # Optional: Visualize the importance
 plot(importance_RF)
+plot(Glioma_rfc)
+
+print(paste("Accuracy:", round(acc_RF, 4)))
+print(paste("Sensitivity:", round(sens_RF, 4)))
+print(paste("Specificity:", round(spec_RF, 4)))
+print(paste("Precision:", round(prec_RF, 4)))
 ```
 
 
@@ -457,14 +463,16 @@ Glioma_GBM2_pred <- predict(Glioma_GBM2, newdata = Glioma_test, n.trees = best_i
 Glioma_GBM2_predicted <- ifelse(Glioma_GBM2_pred > 0.5, 1, 0)
 Glioma_GBM2_predicted <- ifelse(Glioma_GBM2_predicted == 1, "GBM", "LGG")
 
-Glioma_GBM2_conf_matrix <- table(Predicted = Glioma_GBM2_predicted, Actual = Glioma_test$Grade)
-Glioma_GBM2_conf_matrix
-
 Glioma_GBM2_test_error <- 1-(sum(diag(Glioma_GBM2_conf_matrix))/sum(Glioma_GBM2_conf_matrix))
 Glioma_GBM2_test_error
 
-auc_GB <- auc(roc(Glioma_test$Grade, Glioma_GBM2_pred))
-print(auc_GB)
+Glioma_GBM2_conf_matrix <- table(Predicted = Glioma_GBM2_predicted, Actual = Glioma_test$Grade)
+Glioma_GBM2_conf_matrix
+
+print(paste("Accuracy:", round(acc_GB, 4)))
+print(paste("Sensitivity:", round(sens_GB, 4)))
+print(paste("Specificity:", round(spec_GB, 4)))
+print(paste("Precision:", round(prec_GB, 4)))
 
 acc_GB <- (sum(diag(Glioma_GBM2_conf_matrix))/sum(Glioma_GBM2_conf_matrix))
 acc_GB
@@ -474,6 +482,11 @@ sens_GB <- Glioma_GBM2_conf_matrix[2,2] / (Glioma_GBM2_conf_matrix[2,2] + Glioma
 sens_GB
 prec_GB <- Glioma_GBM2_conf_matrix[1,1] / (Glioma_GBM2_conf_matrix[1,1] + Glioma_GBM2_conf_matrix[1,2])
 prec_GB
+
+
+
+auc_GB <- auc(roc(Glioma_test$Grade, Glioma_GBM2_pred))
+print(auc_GB)
 
 importance_GB <- summary(
   Glioma_GBM2, 
@@ -499,9 +512,6 @@ Glioma_Ada_pred <- predict(Glioma_Ada, newdata = Glioma_test, n.trees = best_ite
 Glioma_Ada_predicted <- ifelse(Glioma_Ada_pred > 0.5, 1, 0)
 Glioma_Ada_predicted <- ifelse(Glioma_Ada_predicted == 1, "GBM", "LGG")
 
-Glioma_Ada_conf_matrix <- table(Predicted = Glioma_Ada_predicted, Actual = Glioma_test$Grade)
-Glioma_Ada_conf_matrix
-
 Glioma_Ada_test_error <- 1-(sum(diag(Glioma_Ada_conf_matrix))/sum(Glioma_Ada_conf_matrix))
 Glioma_Ada_test_error
 
@@ -516,6 +526,14 @@ sens_AB <- Glioma_Ada_conf_matrix[2,2] / (Glioma_Ada_conf_matrix[2,2] + Glioma_A
 sens_AB
 prec_AB <- Glioma_Ada_conf_matrix[1,1] / (Glioma_Ada_conf_matrix[1,1] + Glioma_Ada_conf_matrix[1,2])
 prec_AB
+
+Glioma_Ada_conf_matrix <- table(Predicted = Glioma_Ada_predicted, Actual = Glioma_test$Grade)
+Glioma_Ada_conf_matrix
+
+print(paste("Accuracy:", round(acc_AB, 4)))
+print(paste("Sensitivity:", round(sens_AB, 4)))
+print(paste("Specificity:", round(spec_AB, 4)))
+print(paste("Precision:", round(prec_AB, 4)))
 
 importance_AB <- summary(
   Glioma_Ada, 
@@ -569,8 +587,7 @@ Glioma_SVM_radial <- tune_radial$best.model
 Glioma_SVM_radial_pred <- predict(Glioma_SVM_radial, Glioma_test, probability = TRUE) #returns labels directly
 Glioma_SVM_radial_probs <- attr(Glioma_SVM_radial_pred, "probabilities")
 
-Glioma_SVM_radial_conf_matrix <- table(Predicted = Glioma_SVM_radial_pred, Actual = Glioma_test$Grade)
-Glioma_SVM_radial_conf_matrix
+
 
 Glioma_SVM_radial_test_error <- 1-(sum(diag(Glioma_SVM_radial_conf_matrix))/sum(Glioma_SVM_radial_conf_matrix))
 Glioma_SVM_radial_test_error
@@ -588,6 +605,16 @@ sens_SVM <- Glioma_SVM_radial_conf_matrix[2,2] / (Glioma_SVM_radial_conf_matrix[
 sens_SVM
 prec_SVM <- Glioma_SVM_radial_conf_matrix[1,1] / (Glioma_SVM_radial_conf_matrix[1,1] + Glioma_SVM_radial_conf_matrix[1,2])
 prec_SVM
+
+Glioma_SVM_radial_conf_matrix <- table(Predicted = Glioma_SVM_radial_pred, Actual = Glioma_test$Grade)
+Glioma_SVM_radial_conf_matrix
+
+print(paste("Accuracy:", round(acc_SVM, 4)))
+print(paste("Sensitivity:", round(sens_SVM, 4)))
+print(paste("Specificity:", round(spec_SVM, 4)))
+print(paste("Precision:", round(prec_SVM, 4)))
+
+plot(tune_radial)
 ```
 
 ```{r}
