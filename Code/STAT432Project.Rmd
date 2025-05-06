@@ -334,13 +334,19 @@ logistic_model <- glm(
   data = Glioma_train,
   family = binomial(link = "logit")
 )
+logistic_model2 <- glm(
+  Grade ~ Age_at_diagnosis + IDH1 + TP53 + NF1 + PIK3R1 + IDH2,               
+  data = Glioma_train,
+  family = binomial(link = "logit")
+)
 
 # Model summary (check p-values)
 summary(logistic_model)
+summary(logistic_model2)
 
 #predict
 pred_probs <- predict(logistic_model, newdata = Glioma_test, type = "response")
-
+pred_probs2 <- predict(logistic_model2, newdata = Glioma_test, type = "response")
 # Convert to class predictions (cutoff = 0.5)
 pred_classes <- ifelse(pred_probs > 0.5, 1, 0)
 
@@ -373,6 +379,9 @@ plot(roc_obj, main = "ROC Curve for Glioma Grade Prediction")
 auc_LR <- auc(roc_obj)
 cat("AUC:", round(auc_LR, 3))  # AUC > 0.7 indicates good discrimination
 
+roc_obj2 <- roc(response = Y_test, predictor = pred_probs2)
+auc_LR2 <- auc(roc_obj2)
+cat("AUC:", round(auc_LR2, 3))
 ```
 
 
@@ -580,7 +589,7 @@ print(auc_value)
 ```{r}
 set.seed(7)
 tune_radial=tune(svm, Grade~., data=Glioma_train, kernel ="radial",
-ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100)), probability = TRUE
+ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10,20,30,100)), probability = TRUE
 )
 Glioma_SVM_radial <- tune_radial$best.model
 
