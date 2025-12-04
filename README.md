@@ -26,7 +26,6 @@ This project develops and evaluates classification models to predict brain tumor
 6. Support Vector Machine (SVM)
 
 ### Key Results
-- **Best performing model**: SVM (Radial Kernel) with **AUC of 0.9548**
 - **Most important features**: IDH1, Age at Diagnosis, TP53, ATRX, and EGFR mutations
 - All models achieved **>80% accuracy** with strong sensitivity for GBM detection
 
